@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Alerta de Seguridad Android</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #080808;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    .pantalla {
+      width: 92%;
+      max-width: 600px;
+      background: #181818;
+      border: 2px solid #ff3030;
+      border-radius: 18px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: 0 0 40px rgba(255, 0, 0, 0.35);
+    }
+
+    .icono {
+      font-size: 65px;
+    }
+
+    h1 {
+      color: #ff3030;
+      font-size: 28px;
+    }
+
+    p {
+      color: #ddd;
+      font-size: 17px;
+      line-height: 1.5;
+    }
+
+    button {
+      background: #ff3030;
+      color: white;
+      border: none;
+      padding: 14px 25px;
+      border-radius: 8px;
+      font-size: 17px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    button:hover {
+      background: #d90000;
+    }
+
+    #analisis,
+    #cargando,
+    #final {
+      display: none;
+    }
+
+    .permiso {
+      background: #242424;
+      border: 1px solid #444;
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 15px;
+      text-align: left;
+    }
+
+    .permiso strong {
+      color: #ff5555;
+    }
+
+    .barra {
+      width: 100%;
+      height: 10px;
+      background: #333;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 25px;
+    }
+
+    .progreso {
+      width: 0%;
+      height: 100%;
+      background: #ff3030;
+    }
+
+    .progreso.cargando {
+      animation: cargar 5s linear forwards;
+    }
+
+    @keyframes cargar {
+      from {
+        width: 0%;
+      }
+
+      to {
+        width: 100%;
+      }
+    }
+
+    .informacion {
+      margin-top: 20px;
+      background: #181818;
+      border: 1px solid #ff3030;
+      border-radius: 15px;
+      padding: 20px;
+      text-align: left;
+    }
+
+    .dato {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      border-bottom: 1px solid #333;
+      padding: 10px 0;
+      font-size: 14px;
+    }
+
+    .dato:last-child {
+      border-bottom: none;
+    }
+
+    .nombre-dato {
+      color: #ff5555;
+      font-weight: bold;
+    }
+
+    .valor-dato {
+      color: #eee;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .boton-sms {
+      background: #2196f3;
+      width: 100%;
+      margin-top: 25px;
+      font-weight: bold;
+    }
+
+    .boton-sms:hover {
+      background: #1976d2;
+    }
+
+    body.alerta-roja {
+      animation: parpadeo 0.5s infinite;
+    }
+
+    @keyframes parpadeo {
+      0% {
+        background: #080808;
+      }
+
+      50% {
+        background: #450000;
+      }
+
+      100% {
+        background: #080808;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="pantalla" id="permisos">
+
+    <div class="icono">🔐</div>
+
+    <h1>Autorización necesaria</h1>
+
+    <p>
+      Esta página solicitará permisos del navegador
+      para obtener información que el navegador permita
+      consultar.
+    </p>
+
+    <div class="permiso">
+
+      📍 <strong>Ubicación</strong>
+
+      <br><br>
+
+      El navegador solicitará permiso para obtener
+      las coordenadas disponibles del dispositivo.
+
+    </div>
+
+    <div class="permiso">
+
+      📷 <strong>Cámara</strong>
+
+      <br><br>
+
+      El navegador solicitará permiso para comprobar
+      si existe acceso a una cámara.
+
+    </div>
+
+    <button id="autorizar">
+      Autorizar acceso
+    </button>
+
+    <p id="estadoPermisos"></p>
+
+  </div>
+
+
+  <div class="pantalla" id="analisis">
+
+    <div class="icono">⚠️</div>
+
+    <h1>ANÁLISIS DEL DISPOSITIVO</h1>
+
+    <p>
+      Los permisos han sido procesados.
+    </p>
+
+    <p>
+      Pulsa el botón para comenzar.
+    </p>
+
+    <button id="boton">
+      Iniciar análisis
+    </button>
+
+  </div>
+
+
+  <div class="pantalla" id="cargando">
+
+    <div class="icono">🔍</div>
+
+    <h1>Analizando dispositivo</h1>
+
+    <p>
+      Consultando información disponible...
+    </p>
+
+    <div class="barra">
+
+      <div
+        class="progreso"
+        id="progreso">
+      </div>
+
+    </div>
+
+    <p id="contador">
+      Análisis: 0%
+    </p>
+
+  </div>
+
+
+  <div class="pantalla" id="final">
+
+    <div class="icono">🚨</div>
+
+    <h1>ANÁLISIS TERMINADO</h1>
+
+    <p>
+      Datos obtenidos mediante las funciones
+      disponibles del navegador:
+    </p>
+
+    <div class="informacion">
+
+      <div class="dato">
+        <span class="nombre-dato">Sistema:</span>
+        <span class="valor-dato" id="sistema">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">Navegador:</span>
+        <span class="valor-dato" id="navegador">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">Idioma:</span>
+        <span class="valor-dato" id="idioma">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">Pantalla:</span>
+        <span class="valor-dato" id="pantalla">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">Ventana:</span>
+        <span class="valor-dato" id="ventana">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">Zona horaria:</span>
+        <span class="valor-dato" id="zona">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">Fecha y hora:</span>
+        <span class="valor-dato" id="fecha">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">Dispositivo:</span>
+        <span class="valor-dato" id="dispositivo">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">CPU lógica:</span>
+        <span class="valor-dato" id="cpu">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">Memoria:</span>
+        <span class="valor-dato" id="memoria">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">Conexión:</span>
+        <span class="valor-dato" id="conexion">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">Modo oscuro:</span>
+        <span class="valor-dato" id="oscuro">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">Batería:</span>
+        <span class="valor-dato" id="bateria">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">Ubicación:</span>
+        <span class="valor-dato" id="ubicacion">
+          No disponible
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="nombre-dato">Cámara:</span>
+        <span class="valor-dato" id="camara">
+          No disponible
+        </span>
+      </div>
+
+    </div>
+
+
+    <button
+      class="boton-sms"
+      id="sms">
+
+      📩 Preparar SMS
+
+    </button>
+
+  </div>
+
+
+  <script>
+
+    let porcentaje = 0;
+
+    let audioContext = null;
+
+    let oscilador = null;
+
+    let volumen = null;
+
+    let alarmaActiva = false;
+
+    let ubicacionObtenida =
+      "No disponible";
+
+    let camaraAutorizada =
+      false;
+
+
+    document
+      .getElementById("autorizar")
+      .addEventListener(
+        "click",
+        async function() {
+
+          document.getElementById(
+            "estadoPermisos"
+          ).textContent =
+            "Solicitando permisos...";
+
+
+          if ("geolocation" in navigator) {
+
+            await new Promise(
+              function(resolve) {
+
+                navigator.geolocation
+                  .getCurrentPosition(
+
+                    function(posicion) {
+
+                      const latitud =
+                        posicion.coords.latitude;
+
+                      const longitud =
+                        posicion.coords.longitude;
+
+                      const precision =
+                        posicion.coords.accuracy;
+
+
+                      ubicacionObtenida =
+                        latitud.toFixed(6) +
+                        ", " +
+                        longitud.toFixed(6) +
+                        " (precisión aprox. " +
+                        Math.round(precision) +
+                        " m)";
+
+
+                      resolve();
+
+                    },
+
+                    function() {
+
+                      ubicacionObtenida =
+                        "Permiso rechazado";
+
+                      resolve();
+
+                    },
+
+                    {
+                      enableHighAccuracy: true,
+                      timeout: 10000,
+                      maximumAge: 0
+                    }
+
+                  );
+
+              }
+            );
+
+          } else {
+
+            ubicacionObtenida =
+              "No disponible";
+
+          }
+
+
+          try {
+
+            if (
+              !navigator.mediaDevices ||
+              !navigator.mediaDevices.getUserMedia
+            ) {
+
+              throw new Error(
+                "Cámara no disponible"
+              );
+
+            }
+
+
+            const stream =
+              await navigator.mediaDevices
+                .getUserMedia({
+                  video: true
+                });
+
+
+            camaraAutorizada =
+              true;
+
+
+            stream
+              .getTracks()
+              .forEach(
+                function(track) {
+                  track.stop();
+                }
+              );
+
+
+          } catch (error) {
+
+            camaraAutorizada =
+              false;
+
+          }
+
+
+          document.getElementById(
+            "permisos"
+          ).style.display =
+            "none";
+
+
+          document.getElementById(
+            "analisis"
+          ).style.display =
+            "block";
+
+        }
+      );
+
+
+    document
+      .getElementById("boton")
+      .addEventListener(
+        "click",
+        function() {
+
+          audioContext =
+            new (
+              window.AudioContext ||
+              window.webkitAudioContext
+            )();
+
+
+          audioContext.resume();
+
+
+          document.getElementById(
+            "analisis"
+          ).style.display =
+            "none";
+
+
+          document.getElementById(
+            "cargando"
+          ).style.display =
+            "block";
+
+
+          document.getElementById(
+            "progreso"
+          ).classList.add(
+            "cargando"
+          );
+
+
+          iniciarAnalisis();
+
+        }
+      );
+
+
+    function iniciarAnalisis() {
+
+      const contador =
+        setInterval(
+          function() {
+
+            porcentaje++;
+
+
+            document.getElementById(
+              "contador"
+            ).textContent =
+              "Análisis: " +
+              porcentaje +
+              "%";
+
+
+            if (porcentaje >= 100) {
+
+              clearInterval(contador);
+
+            }
+
+          },
+          50
+        );
+
+
+      setTimeout(
+        function() {
+
+          mostrarAlarma();
+
+        },
+        5000
+      );
+
+    }
+
+
+    function mostrarAlarma() {
+
+      document.getElementById(
+        "cargando"
+      ).style.display =
+        "none";
+
+
+      document.getElementById(
+        "final"
+      ).style.display =
+        "block";
+
+
+      document.body.classList.add(
+        "alerta-roja"
+      );
+
+
+      obtenerInformacion();
+
+      iniciarVibracion();
+
+      iniciarSirena();
+
+    }
+
+
+    function obtenerInformacion() {
+
+      const datos =
+        navigator.userAgent;
+
+
+      let sistema =
+        "No disponible";
+
+
+      if (/Android/i.test(datos)) {
+
+        sistema = "Android";
+
+      } else if (
+        /iPhone|iPad|iPod/i.test(datos)
+      ) {
+
+        sistema = "iOS";
+
+      } else if (/Windows/i.test(datos)) {
+
+        sistema = "Windows";
+
+      } else if (
+        /Macintosh|Mac OS X/i.test(datos)
+      ) {
+
+        sistema = "macOS";
+
+      } else if (/Linux/i.test(datos)) {
+
+        sistema = "Linux";
+
+      }
+
+
+      document.getElementById(
+        "sistema"
+      ).textContent =
+        sistema;
+
+
+      let navegador =
+        "No disponible";
+
+
+      if (/Edg\//i.test(datos)) {
+
+        navegador =
+          "Microsoft Edge";
+
+      } else if (/OPR\//i.test(datos)) {
+
+        navegador =
+          "Opera";
+
+      } else if (/Chrome\//i.test(datos)) {
+
+        navegador =
+          "Google Chrome";
+
+      } else if (/Firefox\//i.test(datos)) {
+
+        navegador =
+          "Mozilla Firefox";
+
+      } else if (/Safari\//i.test(datos)) {
+
+        navegador =
+          "Safari";
+
+      }
+
+
+      document.getElementById(
+        "navegador"
+      ).textContent =
+        navegador;
+
+
+      document.getElementById(
+        "idioma"
+      ).textContent =
+        navigator.language ||
+        "No disponible";
+
+
+      document.getElementById(
+        "pantalla"
+      ).textContent =
+        screen.width +
+        " × " +
+        screen.height +
+        " px";
+
+
+      document.getElementById(
+        "ventana"
+      ).textContent =
+        window.innerWidth +
+        " × " +
+        window.innerHeight +
+        " px";
+
+
+      try {
+
+        document.getElementById(
+          "zona"
+        ).textContent =
+          Intl.DateTimeFormat()
+            .resolvedOptions()
+            .timeZone ||
+          "No disponible";
+
+      } catch {
+
+        document.getElementById(
+          "zona"
+        ).textContent =
+          "No disponible";
+
+      }
+
+
+      document.getElementById(
+        "fecha"
+      ).textContent =
+        new Date().toLocaleString();
+
+
+      let dispositivo =
+        "Computadora";
+
+
+      if (
+        /Mobi|Android|iPhone|iPad|iPod/i
+          .test(datos)
+      ) {
+
+        dispositivo =
+          "Dispositivo móvil";
+
+      }
+
+
+      document.getElementById(
+        "dispositivo"
+      ).textContent =
+        dispositivo;
+
+
+      if (navigator.hardwareConcurrency) {
+
+        document.getElementById(
+          "cpu"
+        ).textContent =
+          navigator.hardwareConcurrency +
+          " núcleos lógicos";
+
+      } else {
+
+        document.getElementById(
+          "cpu"
+        ).textContent =
+          "No disponible";
+
+      }
+
+
+      if (navigator.deviceMemory) {
+
+        document.getElementById(
+          "memoria"
+        ).textContent =
+          navigator.deviceMemory +
+          " GB aproximadamente";
+
+      } else {
+
+        document.getElementById(
+          "memoria"
+        ).textContent =
+          "No disponible";
+
+      }
+
+
+      if (navigator.onLine) {
+
+        let conexion =
+          "En línea";
+
+
+        if (
+          navigator.connection &&
+          navigator.connection.effectiveType
+        ) {
+
+          conexion +=
+            " - " +
+            navigator.connection.effectiveType;
+
+        }
+
+
+        document.getElementById(
+          "conexion"
+        ).textContent =
+          conexion;
+
+      } else {
+
+        document.getElementById(
+          "conexion"
+        ).textContent =
+          "Sin conexión";
+
+      }
+
+
+      if (window.matchMedia) {
+
+        document.getElementById(
+          "oscuro"
+        ).textContent =
+
+          window.matchMedia(
+            "(prefers-color-scheme: dark)"
+          ).matches
+
+          ? "Activado"
+
+          : "Desactivado";
+
+      } else {
+
+        document.getElementById(
+          "oscuro"
+        ).textContent =
+          "No disponible";
+
+      }
+
+
+      /*
+        BATERÍA
+
+        El navegador puede no proporcionar
+        el nivel real de batería.
+
+        Si no existe la API o falla,
+        se muestra "No disponible".
+      */
+
+      const elementoBateria =
+        document.getElementById(
+          "bateria"
+        );
+
+
+      elementoBateria.textContent =
+        "Consultando...";
+
+
+      if (
+        "getBattery" in navigator &&
+        typeof navigator.getBattery ===
+        "function"
+      ) {
+
+        navigator.getBattery()
+
+          .then(
+            function(bateria) {
+
+              function actualizarBateria() {
+
+                const nivel =
+                  bateria.level;
+
+
+                if (
+                  typeof nivel === "number" &&
+                  Number.isFinite(nivel) &&
+                  nivel >= 0 &&
+                  nivel <= 1
+                ) {
+
+                  const porcentajeBateria =
+                    Math.round(
+                      nivel * 100
+                    );
+
+
+                  /*
+                    Evita valores imposibles.
+                  */
+
+                  if (
+                    porcentajeBateria >= 0 &&
+                    porcentajeBateria <= 100
+                  ) {
+
+                    elementoBateria.textContent =
+                      porcentajeBateria +
+                      "%";
+
+                  } else {
+
+                    elementoBateria.textContent =
+                      "No disponible";
+
+                  }
+
+                } else {
+
+                  elementoBateria.textContent =
+                    "No disponible";
+
+                }
+
+              }
+
+
+              actualizarBateria();
+
+
+              if (
+                bateria.addEventListener
+              ) {
+
+                bateria.addEventListener(
+                  "levelchange",
+                  actualizarBateria
+                );
+
+              }
+
+            }
+          )
+
+          .catch(
+            function() {
+
+              elementoBateria.textContent =
+                "No disponible";
+
+            }
+          );
+
+      } else {
+
+        elementoBateria.textContent =
+          "No disponible";
+
+      }
+
+
+      document.getElementById(
+        "ubicacion"
+      ).textContent =
+        ubicacionObtenida;
+
+
+      document.getElementById(
+        "camara"
+      ).textContent =
+
+        camaraAutorizada
+
+        ? "Acceso autorizado"
+
+        : "No autorizada";
+
+    }
+
+
+    document
+      .getElementById("sms")
+      .addEventListener(
+        "click",
+        function() {
+
+          const mensaje =
+
+            "INFORMACION DEL DISPOSITIVO\n\n" +
+
+            "Sistema: " +
+            document.getElementById(
+              "sistema"
+            ).textContent +
+
+            "\nNavegador: " +
+            document.getElementById(
+              "navegador"
+            ).textContent +
+
+            "\nIdioma: " +
+            document.getElementById(
+              "idioma"
+            ).textContent +
+
+            "\nPantalla: " +
+            document.getElementById(
+              "pantalla"
+            ).textContent +
+
+            "\nVentana: " +
+            document.getElementById(
+              "ventana"
+            ).textContent +
+
+            "\nZona horaria: " +
+            document.getElementById(
+              "zona"
+            ).textContent +
+
+            "\nFecha y hora: " +
+            document.getElementById(
+              "fecha"
+            ).textContent +
+
+            "\nDispositivo: " +
+            document.getElementById(
+              "dispositivo"
+            ).textContent +
+
+            "\nCPU: " +
+            document.getElementById(
+              "cpu"
+            ).textContent +
+
+            "\nMemoria: " +
+            document.getElementById(
+              "memoria"
+            ).textContent +
+
+            "\nConexion: " +
+            document.getElementById(
+              "conexion"
+            ).textContent +
+
+            "\nModo oscuro: " +
+            document.getElementById(
+              "oscuro"
+            ).textContent +
+
+            "\nBateria: " +
+            document.getElementById(
+              "bateria"
+            ).textContent +
+
+            "\nUbicacion: " +
+            document.getElementById(
+              "ubicacion"
+            ).textContent +
+
+            "\nCamara: " +
+            document.getElementById(
+              "camara"
+            ).textContent;
+
+
+          const numero =
+            "+528672446084";
+
+
+          const enlace =
+            "sms:" +
+            numero +
+            "?body=" +
+            encodeURIComponent(
+              mensaje
+            );
+
+
+          window.location.href =
+            enlace;
+
+        }
+      );
+
+
+    function iniciarVibracion() {
+
+      if (
+        "vibrate" in navigator
+      ) {
+
+        navigator.vibrate([
+
+          700, 300,
+          700, 300,
+          700, 300,
+          700, 300,
+          700, 300,
+          700, 300,
+          700, 300,
+          700, 300
+
+        ]);
+
+      }
+
+    }
+
+
+    function iniciarSirena() {
+
+      if (!audioContext)
+        return;
+
+
+      if (alarmaActiva)
+        return;
+
+
+      alarmaActiva =
+        true;
+
+
+      oscilador =
+        audioContext.createOscillator();
+
+
+      volumen =
+        audioContext.createGain();
+
+
+      oscilador.type =
+        "sawtooth";
+
+
+      oscilador.connect(
+        volumen
+      );
+
+
+      volumen.connect(
+        audioContext.destination
+      );
+
+
+      volumen.gain.setValueAtTime(
+        0.25,
+        audioContext.currentTime
+      );
+
+
+      oscilador.start();
+
+
+      let tiempo =
+        audioContext.currentTime;
+
+
+      for (
+        let i = 0;
+        i < 10;
+        i++
+      ) {
+
+        let inicio =
+          tiempo + i;
+
+
+        oscilador.frequency
+          .setValueAtTime(
+            500,
+            inicio
+          );
+
+
+        oscilador.frequency
+          .linearRampToValueAtTime(
+            1200,
+            inicio + 0.5
+          );
+
+
+        oscilador.frequency
+          .linearRampToValueAtTime(
+            500,
+            inicio + 1
+          );
+
+      }
+
+
+      volumen.gain.setValueAtTime(
+        0.25,
+        tiempo + 9.5
+      );
+
+
+      volumen.gain
+        .exponentialRampToValueAtTime(
+          0.001,
+          tiempo + 10
+        );
+
+
+      oscilador.stop(
+        tiempo + 10
+      );
+
+
+      setTimeout(
+        function() {
+
+          document.body.classList.remove(
+            "alerta-roja"
+          );
+
+        },
+        10000
+      );
+
+    }
+
+  </script>
+
+</body>
+
+</html>
+```
